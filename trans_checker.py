@@ -20,18 +20,26 @@ import re
 FILE_DOES_NOT_EXIST_TRUE = "Source file doesn't exist"
 
 # - Valid Keys
-DEFAULT_KEYS = ['Header','Instruction','Status']
+#DEFAULT_KEYS = ['Header','Instruction','Status']
+DEFAULT_KEYS = ['Header','Status','Instruction']
 
 # - Valid Parameters
-DEFAULT_PARAMETER_LIST_INSTRUCTION = ['Time','Tid','Fid','Uid','Sid','User','RealUser','Context']
-DEFAULT_PARAMETER_LIST_STATUS = ['Code']
+DEFAULT_PARAMETER_LIST_INSTRUCTION = ['Header','Amount','Cc','From','To']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_HEADER = ['Time','Tid','Fid','Uid','Sid','User','RealUser','Context','Records']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_FROM = ['Fri','OffNet','Message','Available','RFri','Cc','FROParents','Fri','SP','FRO','Rate','OffNet','OfferIdentities','Amount','AccountHolder','Committed','Total','BankDomainName','IFee']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_FROM_AVAILABLE = ['After','Before']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_FROM_FRO = ['MSISDN','Id','UserProfile']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_FROM_ACCOUNTHOLDER = ['MSISDN','Id','UserProfile']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_FROM_COMMITED = ['After','Before']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_FROM_TOTAL = ['After','Before']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_TO = ['Fri','OffNet','Message','Amount','RFri','Cc','Fri','SP','FRO','Rate','OffNet','BankDomainName']
+DEFAULT_PARAMETER_LIST_INSTRUCTION_TO_FRO = [ 'Username','Id','UserProfile']
+DEFAULT_PARAMETER_LIST_STATUS = ['Code','Msg']
 DEFAULT_PARAMETER_LIST_HEADER = ['Type','Ver']
 
-# - Temporal list
-DEFAULT_PARAMETER_LIST_INSTRUCTION_TEMP = ['Time','Tid','Fid','Sid','User','RealUser','Context']
-
 # - Separator
-SEPARATOR = ','
+SEPARATOR = ';'
+ITEM_SEPARATOR = '.'
 
 # +-+-+-+-+-+ +-+-+-+-+-+-+-+-+-+-+
 # |C|L|A|S|S| |D|E|F|I|N|I|T|I|O|N|
@@ -106,43 +114,55 @@ class JSONFileBox:
 	    #self.myJSONObjects.append(tempJson)
 	    self.myJSONObjects.append(temporalTuple)
 
+    @staticmethod
+    def cleanAtoms(myValue):
+        if type(myValue) == unicode:
+            renValue = myValue.encode('ascii')
+        else:
+	    renValue = str(myValue)
+	return renValue
+
     def printJsonDetail(self):
-	#print self.myJSONObjects
         for myFile,jsonDictionary in self.myJSONObjects:
+            print jsonDictionary
 	    # - Get the object dictionary
-	    for key in jsonDictionary:
-                # - Get the main keys
-		for index1,subValue in enumerate(jsonDictionary[key]):
-			if key == 'Instruction':
-		            for index2,instructionValue in enumerate(jsonDictionary[key][subValue]):
-			        if instructionValue in DEFAULT_PARAMETER_LIST_INSTRUCTION_TEMP:
-				    #print jsonDictionary[key][subValue][instructionValue]
-				    myValue = jsonDictionary[key][subValue][instructionValue]
-				    myTuple = (myFile,instructionValue,myValue)
-                                    self.myFilterResult.append(myTuple)
-	
-	#print self.myFilterResult
-	for indice,everyTuple in enumerate(self.myFilterResult):
-	    myFileName, myName, myValue = everyTuple
-
-	    if type(myName) == unicode:
-	        myRenName = myName.encode('ascii')
-	    else:
-		myRenName = str(myName)
-
-	    if type(myValue) == unicode:
-	        myRenValue = myValue.encode('ascii')
-	    else:
-		myRenValue = str(myValue)
+	    for key in jsonDictionary.keys():
+                if key in DEFAULT_KEYS:
+		    if isinstance(jsonDictionary[key],dict):
+                        if key == 'Instruction':
+			    for myInternalKey in jsonDictionary[key].keys():
+				if isinstance(jsonDictionary[key][myInternalKey],dict):
+				    # - Dictionary
+			            for value in jsonDictionary[key][myInternalKey].items():
+				        myTupleName, myTupleValue = value
+                                        myTupleNameRen = JSONFileBox.cleanAtoms(myTupleName)
+					myTupleNameRen = key + ITEM_SEPARATOR + myInternalKey + ITEM_SEPARATOR + myTupleNameRen
+                                        myTupleValueRen = JSONFileBox.cleanAtoms(myTupleValue)
+				        myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
+				        self.myFinalList.append(myFinalTuple)
+				else:
+			             # - Atomic
+				     myTupleName = myInternalKey
+				     myTupleValue = jsonDictionary[key][myInternalKey]
+				     myTupleNameRen = JSONFileBox.cleanAtoms(myTupleName)
+				     myTupleNameRen = key + ITEM_SEPARATOR + myTupleNameRen
+				     myTupleValueRen = JSONFileBox.cleanAtoms(myTupleValue)
+				     myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
+				     self.myFinalList.append(myFinalTuple)
+                        else:
+			    for myInternalKey in jsonDictionary[key].keys():
+                                myTupleNameRen = JSONFileBox.cleanAtoms(myInternalKey)
+				myTupleNameRen = key + ITEM_SEPARATOR + myTupleNameRen
+                                myTupleValueRen = JSONFileBox.cleanAtoms(jsonDictionary[key].get(myInternalKey))
+				myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
+				self.myFinalList.append(myFinalTuple)
             
-            myRenTuple = (myFileName,myRenName,myRenValue)
-            self.myFinalList.append(myRenTuple)
-
+	#print self.myFinalList
         myTemporalString = ''
 	for myFile in self.myJSONFileList:
 	    for myTup in self.myFinalList:
 	        if myFile == myTup[0]:
-	            myTemporalString = myTemporalString + myTup[2] + ','
+	            myTemporalString = myTemporalString + myTup[1] + ITEM_SEPARATOR +  myTup[2] + SEPARATOR
 	    if myTemporalString:
                 myTemporalString = myTemporalString[:-1]
 	        self.myFinalStringList.append(myTemporalString)
@@ -194,7 +214,4 @@ else:
 jsonfile1.dumpMyJsonToFile(os1.myFile)
 jsonfile1.loadJsons()
 jsonfile1.printJsonDetail()
-#print finalReport1.myFinalReport
-#print jsonfile1.myFinalLongStringNames
 finalReport1.printFinalReport(jsonfile1.myFinalStringList)
-
