@@ -20,8 +20,7 @@ import re
 FILE_DOES_NOT_EXIST_TRUE = "Source file doesn't exist"
 
 # - Valid Keys
-#DEFAULT_KEYS = ['Header','Instruction','Status']
-DEFAULT_KEYS = ['Header','Status','Instruction']
+DEFAULT_KEYS = ['Header','Instruction','Status']
 
 # - Valid Parameters
 DEFAULT_PARAMETER_LIST_INSTRUCTION = ['Header','Amount','Cc','From','To']
@@ -122,40 +121,60 @@ class JSONFileBox:
 	    renValue = str(myValue)
 	return renValue
 
+    @staticmethod
+    def printInvalidKeys(listName,key,subkey):
+        INTERNAL_LONG_DETAIL_STRING = 'Missing Key or SubKey to be reported: ' 
+	INTERNAL_SEPARATOR = ' : '
+	internalString = INTERNAL_LONG_DETAIL_STRING + listName + INTERNAL_SEPARATOR + key + INTERNAL_SEPARATOR + subkey
+	print internalString
+
     def printJsonDetail(self):
         for myFile,jsonDictionary in self.myJSONObjects:
-            print jsonDictionary
 	    # - Get the object dictionary
 	    for key in jsonDictionary.keys():
+		# - Validate keys
                 if key in DEFAULT_KEYS:
 		    if isinstance(jsonDictionary[key],dict):
                         if key == 'Instruction':
+			    # - Instruction
 			    for myInternalKey in jsonDictionary[key].keys():
-				if isinstance(jsonDictionary[key][myInternalKey],dict):
-				    # - Dictionary
-			            for value in jsonDictionary[key][myInternalKey].items():
-				        myTupleName, myTupleValue = value
-                                        myTupleNameRen = JSONFileBox.cleanAtoms(myTupleName)
-					myTupleNameRen = key + ITEM_SEPARATOR + myInternalKey + ITEM_SEPARATOR + myTupleNameRen
-                                        myTupleValueRen = JSONFileBox.cleanAtoms(myTupleValue)
+		                if myInternalKey in DEFAULT_PARAMETER_LIST_INSTRUCTION:
+				    if isinstance(jsonDictionary[key][myInternalKey],dict):
+				        # - Dictionary
+			                for value in jsonDictionary[key][myInternalKey].items():
+				            myTupleName, myTupleValue = value
+                                            myTupleNameRen = JSONFileBox.cleanAtoms(myTupleName)
+					    myTupleNameRen = key + ITEM_SEPARATOR + myInternalKey + ITEM_SEPARATOR + myTupleNameRen
+                                            myTupleValueRen = JSONFileBox.cleanAtoms(myTupleValue)
+				            myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
+				            self.myFinalList.append(myFinalTuple)
+				    else:
+			                # - Atomic
+				        myTupleName = myInternalKey
+				        myTupleValue = jsonDictionary[key][myInternalKey]
+				        myTupleNameRen = JSONFileBox.cleanAtoms(myTupleName)
+				        myTupleNameRen = key + ITEM_SEPARATOR + myTupleNameRen
+				        myTupleValueRen = JSONFileBox.cleanAtoms(myTupleValue)
 				        myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
 				        self.myFinalList.append(myFinalTuple)
 				else:
-			             # - Atomic
-				     myTupleName = myInternalKey
-				     myTupleValue = jsonDictionary[key][myInternalKey]
-				     myTupleNameRen = JSONFileBox.cleanAtoms(myTupleName)
-				     myTupleNameRen = key + ITEM_SEPARATOR + myTupleNameRen
-				     myTupleValueRen = JSONFileBox.cleanAtoms(myTupleValue)
-				     myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
-				     self.myFinalList.append(myFinalTuple)
+			            JSONFileBox.printInvalidKeys("DEFAULT_PARAMETER_LIST_INSTRUCTION",key,myInternalKey)
                         else:
+			    # - Other keys
 			    for myInternalKey in jsonDictionary[key].keys():
-                                myTupleNameRen = JSONFileBox.cleanAtoms(myInternalKey)
-				myTupleNameRen = key + ITEM_SEPARATOR + myTupleNameRen
-                                myTupleValueRen = JSONFileBox.cleanAtoms(jsonDictionary[key].get(myInternalKey))
-				myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
-				self.myFinalList.append(myFinalTuple)
+			        if myInternalKey in DEFAULT_PARAMETER_LIST_STATUS or myInternalKey in DEFAULT_PARAMETER_LIST_HEADER:
+                                    myTupleNameRen = JSONFileBox.cleanAtoms(myInternalKey)
+				    myTupleNameRen = key + ITEM_SEPARATOR + myTupleNameRen
+                                    myTupleValueRen = JSONFileBox.cleanAtoms(jsonDictionary[key].get(myInternalKey))
+				    myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
+				    self.myFinalList.append(myFinalTuple)
+			        else:
+				    JSONFileBox.printInvalidKeys("DEFAULT_PARAMETER_LIST_STATUS",key,myInternalKey)
+				    JSONFileBox.printInvalidKeys("DEFAULT_PARAMETER_LIST_HEADER",key,myInternalKey)
+		    else:
+			JSONFileBox.printInvalidKeys("MONOLITIC_VALUE",key,'EMPTY')
+	        else:
+		    JSONFileBox.printInvalidKeys("DEFAULT_KEYS",key,'EMPTY')
             
 	#print self.myFinalList
         myTemporalString = ''
@@ -214,4 +233,4 @@ else:
 jsonfile1.dumpMyJsonToFile(os1.myFile)
 jsonfile1.loadJsons()
 jsonfile1.printJsonDetail()
-finalReport1.printFinalReport(jsonfile1.myFinalStringList)
+#finalReport1.printFinalReport(jsonfile1.myFinalStringList)
