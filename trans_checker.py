@@ -36,6 +36,10 @@ DEFAULT_PARAMETER_LIST_INSTRUCTION_TO_FRO = [ 'Username','Id','UserProfile']
 DEFAULT_PARAMETER_LIST_STATUS = ['Code','Msg']
 DEFAULT_PARAMETER_LIST_HEADER = ['Type','Ver']
 
+# - 3 Level dictionaries
+INTERNAL_INSTRUCTION_ITEMS_LEVEL_3 = ['Available','FRO','FROParents','Committed','AccountHolder','Total']
+INTERNAL_INSTRUCTION_SUBKEYS_LEVEL_3 = ['From','To']
+
 # - Separator
 SEPARATOR = ';'
 ITEM_SEPARATOR = '.'
@@ -131,6 +135,7 @@ class JSONFileBox:
     def printJsonDetail(self):
         for myFile,jsonDictionary in self.myJSONObjects:
 	    # - Get the object dictionary
+	    print jsonDictionary
 	    for key in jsonDictionary.keys():
 		# - Validate keys
                 if key in DEFAULT_KEYS:
@@ -141,13 +146,18 @@ class JSONFileBox:
 		                if myInternalKey in DEFAULT_PARAMETER_LIST_INSTRUCTION:
 				    if isinstance(jsonDictionary[key][myInternalKey],dict):
 				        # - Dictionary
-			                for value in jsonDictionary[key][myInternalKey].items():
-				            myTupleName, myTupleValue = value
-                                            myTupleNameRen = JSONFileBox.cleanAtoms(myTupleName)
-					    myTupleNameRen = key + ITEM_SEPARATOR + myInternalKey + ITEM_SEPARATOR + myTupleNameRen
-                                            myTupleValueRen = JSONFileBox.cleanAtoms(myTupleValue)
-				            myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
-				            self.myFinalList.append(myFinalTuple)
+					if myInternalKey in INTERNAL_INSTRUCTION_SUBKEYS_LEVEL_3:
+					    # - Process From and To
+                                            print jsonDictionary[key][myInternalKey].items()
+					else:
+					    # - Process other subKeys
+			                    for value in jsonDictionary[key][myInternalKey].items():
+				                myTupleName, myTupleValue = value
+                                                myTupleNameRen = JSONFileBox.cleanAtoms(myTupleName)
+					        myTupleNameRen = key + ITEM_SEPARATOR + myInternalKey + ITEM_SEPARATOR + myTupleNameRen
+                                                myTupleValueRen = JSONFileBox.cleanAtoms(myTupleValue)
+				                myFinalTuple = ( myFile, myTupleNameRen, myTupleValueRen )
+				                self.myFinalList.append(myFinalTuple)
 				    else:
 			                # - Atomic
 				        myTupleName = myInternalKey
